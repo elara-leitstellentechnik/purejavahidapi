@@ -199,7 +199,8 @@ public class WindowsBackend implements Backend {
 				devHandle = open_device(path, true);
 				// Check validity of write_handle.
 				if (devHandle == INVALID_HANDLE_VALUE) {
-					break;
+					device_index++;
+					continue;
 				}
 
 				HIDD_ATTRIBUTES attrib = new HIDD_ATTRIBUTES();
