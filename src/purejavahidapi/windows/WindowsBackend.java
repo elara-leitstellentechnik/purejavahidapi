@@ -196,6 +196,7 @@ public class WindowsBackend implements Backend {
 					}
 				}
 				String path = new String(device_interface_detail_data.DevicePath, "ascii");
+				path = path.replaceFirst("\0*$", "");    // trim trailing 0-bytes
 				devHandle = open_device(path, true);
 				// Check validity of write_handle.
 				if (devHandle == INVALID_HANDLE_VALUE) {
