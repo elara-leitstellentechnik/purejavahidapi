@@ -29,21 +29,50 @@
  */
 package purejavahidapi.windows;
 
-import java.io.UnsupportedEncodingException;
-import java.util.LinkedList;
-import java.util.List;
+import static purejavahidapi.windows.HidLibrary.HidD_GetAttributes;
+import static purejavahidapi.windows.HidLibrary.HidP_GetSpecificValueCaps;
+import static purejavahidapi.windows.Kernel32Library.CloseHandle;
+import static purejavahidapi.windows.Kernel32Library.CreateFileA;
+import static purejavahidapi.windows.Kernel32Library.ERROR_INSUFFICIENT_BUFFER;
+import static purejavahidapi.windows.Kernel32Library.ERROR_INVALID_DATA;
+import static purejavahidapi.windows.Kernel32Library.ERROR_NO_MORE_ITEMS;
+import static purejavahidapi.windows.Kernel32Library.FILE_FLAG_OVERLAPPED;
+import static purejavahidapi.windows.Kernel32Library.FILE_SHARE_READ;
+import static purejavahidapi.windows.Kernel32Library.FILE_SHARE_WRITE;
+import static purejavahidapi.windows.Kernel32Library.GENERIC_READ;
+import static purejavahidapi.windows.Kernel32Library.GENERIC_WRITE;
+import static purejavahidapi.windows.Kernel32Library.GetLastError;
+import static purejavahidapi.windows.Kernel32Library.HANDLE;
+import static purejavahidapi.windows.Kernel32Library.OPEN_EXISTING;
+import static purejavahidapi.windows.SetUpApiLibrary.DIGCF_DEVICEINTERFACE;
+import static purejavahidapi.windows.SetUpApiLibrary.DIGCF_PRESENT;
+import static purejavahidapi.windows.SetUpApiLibrary.GUID;
+import static purejavahidapi.windows.SetUpApiLibrary.HDEVINFO;
+import static purejavahidapi.windows.SetUpApiLibrary.INVALID_HANDLE_VALUE;
+import static purejavahidapi.windows.SetUpApiLibrary.SPDRP_CLASS;
+import static purejavahidapi.windows.SetUpApiLibrary.SPDRP_DRIVER;
+import static purejavahidapi.windows.SetUpApiLibrary.SP_DEVICE_INTERFACE_DATA;
+import static purejavahidapi.windows.SetUpApiLibrary.SP_DEVICE_INTERFACE_DETAIL_DATA_A;
+import static purejavahidapi.windows.SetUpApiLibrary.SP_DEVINFO_DATA;
+import static purejavahidapi.windows.SetUpApiLibrary.SetupDiDestroyDeviceInfoList;
+import static purejavahidapi.windows.SetUpApiLibrary.SetupDiEnumDeviceInfo;
+import static purejavahidapi.windows.SetUpApiLibrary.SetupDiEnumDeviceInterfaces;
+import static purejavahidapi.windows.SetUpApiLibrary.SetupDiGetClassDevsA;
+import static purejavahidapi.windows.SetUpApiLibrary.SetupDiGetDeviceInterfaceDetailA;
+import static purejavahidapi.windows.SetUpApiLibrary.SetupDiGetDeviceRegistryPropertyA;
 
-import purejavahidapi.shared.Backend;
-import purejavahidapi.shared.Frontend;
-import purejavahidapi.windows.HidLibrary.*;
-
+import com.sun.jna.Native;
 import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
-import com.sun.jna.ptr.NativeLongByReference;
+import purejavahidapi.shared.Backend;
+import purejavahidapi.shared.Frontend;
+import purejavahidapi.windows.HidLibrary.HIDD_ATTRIBUTES;
+import purejavahidapi.windows.HidLibrary.HIDP_LINK_COLLECTION_NODE;
+import purejavahidapi.windows.HidLibrary.HIDP_PREPARSED_DATA;
+import purejavahidapi.windows.HidLibrary.HIDP_VALUE_CAPS;
 
-import static purejavahidapi.windows.SetUpApiLibrary.*;
-import static purejavahidapi.windows.Kernel32Library.*;
-import static purejavahidapi.windows.HidLibrary.*;
+import java.util.LinkedList;
+import java.util.List;
 
 public class WindowsBackend implements Backend {
 	private Frontend m_Frontend;
@@ -102,7 +131,7 @@ public class WindowsBackend implements Backend {
 	@Override
 	public List<purejavahidapi.HidDeviceInfo> enumerateDevices() {
 
-		try {
+		{
 			boolean res;
 			List<purejavahidapi.HidDeviceInfo> list = new LinkedList<purejavahidapi.HidDeviceInfo>();
 
@@ -195,8 +224,7 @@ public class WindowsBackend implements Backend {
 							throw new RuntimeException("SetupDiGetDeviceRegistryPropertyA for SPDRP_DRIVER resulted in error " + GetLastError());
 					}
 				}
-				String path = new String(device_interface_detail_data.DevicePath, "ascii");
-				path = path.replaceFirst("\0*$", "");    // trim trailing 0-bytes
+				String path = Native.toString(device_interface_detail_data.DevicePath, "ascii");    // trims trailing 0-bytes
 				devHandle = open_device(path, true);
 				// Check validity of write_handle.
 				if (devHandle == INVALID_HANDLE_VALUE) {
@@ -218,9 +246,6 @@ public class WindowsBackend implements Backend {
 			// Close the device information handle.
 			SetupDiDestroyDeviceInfoList(device_info_set);
 			return list;
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-			return null;
 		}
 	}
 

@@ -29,17 +29,20 @@
  */
 package purejavahidapi.windows;
 
-import static purejavahidapi.windows.HidLibrary.*;
+import static purejavahidapi.windows.HidLibrary.HIDP_PREPARSED_DATA;
+import static purejavahidapi.windows.HidLibrary.HidD_FreePreparsedData;
+import static purejavahidapi.windows.HidLibrary.HidD_GetManufacturerString;
+import static purejavahidapi.windows.HidLibrary.HidD_GetPreparsedData;
+import static purejavahidapi.windows.HidLibrary.HidD_GetProductString;
+import static purejavahidapi.windows.HidLibrary.HidD_GetSerialNumberString;
+import static purejavahidapi.windows.HidLibrary.HidP_GetCaps;
 import static purejavahidapi.windows.SetUpApiLibrary.HIDP_STATUS_SUCCESS;
-
-import java.nio.ByteBuffer;
 
 import purejavahidapi.windows.HidLibrary.HIDD_ATTRIBUTES;
 import purejavahidapi.windows.HidLibrary.HIDP_CAPS;
 
-import com.sun.jna.Native;
-import com.sun.jna.NativeLong;
-import com.sun.jna.Pointer;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 public class HidDeviceInfo implements purejavahidapi.HidDeviceInfo {
 	private String m_Path;
@@ -115,14 +118,20 @@ public class HidDeviceInfo implements purejavahidapi.HidDeviceInfo {
 			ByteBuffer b=ByteBuffer.wrap(wstr);
 
 			if (HidD_GetSerialNumberString(handle, wstr, sizeofWstr))
-				m_SerialNumberString = Native.toString(wstr, "utf-16le");
+				m_SerialNumberString = getWideString(wstr);
 			if (HidD_GetManufacturerString(handle, wstr, sizeofWstr))
-				m_ManufactureString =  Native.toString(wstr, "utf-16le");
+				m_ManufactureString = getWideString(wstr);
 			if (HidD_GetProductString(handle, wstr, sizeofWstr))
-				m_ProductString =  Native.toString(wstr, "utf-16le");
+				m_ProductString = getWideString(wstr);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
+	}
+
+	private String getWideString(byte[] wstr) {
+		String s = new String(wstr, StandardCharsets.UTF_16LE);
+		int i = s.indexOf('\0');
+		return i < 0 ? s : s.substring(0, i);
 	}
 }
