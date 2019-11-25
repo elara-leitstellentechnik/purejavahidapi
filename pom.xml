@@ -4,7 +4,7 @@
 
     <groupId>purejavahidapi</groupId>
     <artifactId>purejavahidapi</artifactId>
-    <version>005</version>
+    <version>006</version>
 
     <name>Pure Java HID-API</name>
     <url>https://github.com/nyholku/purejavahidapi</url>
@@ -41,7 +41,7 @@
         <dependency>
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
-            <version>4.0.0</version>
+            <version>5.4.0</version>
         </dependency>
     </dependencies>
 </project>

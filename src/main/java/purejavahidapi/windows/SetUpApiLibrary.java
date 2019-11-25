@@ -114,10 +114,14 @@ package purejavahidapi.windows;
 // while n=NA[n].nextSibling
 //     HidP_GetSpecificValueCaps(0,n.0
 //
+
+import com.sun.jna.Library;
+import com.sun.jna.Native;
+import com.sun.jna.Pointer;
+import com.sun.jna.Structure;
+
 import java.util.Arrays;
 import java.util.List;
-
-import com.sun.jna.*;
 
 public class SetUpApiLibrary {
 	static WinApiInterface INSTANCE = (WinApiInterface) Native.loadLibrary("setupapi", WinApiInterface.class);
@@ -214,7 +218,7 @@ public class SetUpApiLibrary {
 	final static int ANYSIZE_ARRAY = 1;
 
 	static public class SP_DEVICE_INTERFACE_DETAIL_DATA_A extends Structure {
-		public int cbSize = Pointer.SIZE == 8 ? 8 : 5; // Note 1
+		public int cbSize = Native.POINTER_SIZE == 8 ? 8 : 5; // Note 1
 		// Note 1, I believe this structure is packed in Windows API and as this field
 		// is initialized with sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA) it gets the size
 		// 5 in 32 bit process but 8 in 64 bit process...i think! Nasty little detail
@@ -233,7 +237,7 @@ public class SetUpApiLibrary {
 	};
 
 	static Pointer invalidPointerValue() {
-		return Pointer.createConstant(Pointer.SIZE == 8 ? -1 : 0xFFFFFFFFL);
+		return Pointer.createConstant(Native.POINTER_SIZE == 8 ? -1 : 0xFFFFFFFFL);
 	}
 
 	public static class HDEVINFO extends Kernel32Library.HANDLE {
