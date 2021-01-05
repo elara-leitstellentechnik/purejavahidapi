@@ -198,6 +198,7 @@ public class WindowsBackend extends Backend {
                     }
 
                     String path = new String(device_interface_detail_data.DevicePath);
+                    path = path.replaceFirst("\0*$", "");    // trim trailing 0-bytes
                     // path += DEVICE_ID_SEPARATOR + deviceId;
                     // FIXME, need to figure out how to smugle device ID to the actual device ... or how
                     // recreate as above when opening the device
