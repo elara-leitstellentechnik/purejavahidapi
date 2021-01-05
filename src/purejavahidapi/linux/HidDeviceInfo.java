@@ -39,12 +39,12 @@ import static purejavahidapi.linux.UdevLibrary.udev_device_unref;
 import static purejavahidapi.linux.UdevLibrary.udev_new;
 import static purejavahidapi.linux.UdevLibrary.udev_unref;
 
+import purejavahidapi.linux.UdevLibrary.udev;
+import purejavahidapi.linux.UdevLibrary.udev_device;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Properties;
-
-import purejavahidapi.linux.UdevLibrary.udev;
-import purejavahidapi.linux.UdevLibrary.udev_device;
 
 /* package */class HidDeviceInfo extends purejavahidapi.HidDeviceInfo {
 
@@ -66,30 +66,30 @@ import purejavahidapi.linux.UdevLibrary.udev_device;
 			
 			if (dev_path == null)
 				throw new IOException("dev_path == null");
-			
-			usb_dev = udev_device_get_parent_with_subsystem_devtype(raw_dev, "usb", "usb_device");
-			String usb_dev_path = udev_device_get_devnode(usb_dev);
-			
 
 
-			Properties p = new Properties();
-			p.load(new StringReader(udev_device_get_sysattr_value(hid_dev, "uevent")));
+            usb_dev = udev_device_get_parent_with_subsystem_devtype(raw_dev, "usb", "usb_device");
+            String usb_dev_path = udev_device_get_devnode(usb_dev);
 
-			String[] hidId = ((String) p.get("HID_ID")).split(":");
-			short bus = (short) Long.parseLong(hidId[0], 16);
-			m_DeviceId = usb_dev_path;
-			m_VendorId = (short) Long.parseLong(hidId[1], 16);
-			m_ProductId = (short) Long.parseLong(hidId[2], 16);
+            Properties p = new Properties();
+            p.load(new StringReader(udev_device_get_sysattr_value(hid_dev, "uevent")));
 
-			m_ProductString = (String) p.get("HID_NAME");
-			m_SerialNumberString = (String) p.get("HID_UNIQ");
+            String[] hidId = ((String) p.get("HID_ID")).split(":");
+            short bus = (short) Long.parseLong(hidId[0], 16);
+            m_DeviceId = usb_dev_path;
+            m_VendorId = (short) Long.parseLong(hidId[1], 16);
+            m_ProductId = (short) Long.parseLong(hidId[2], 16);
+            m_ReleaseNumber = (short) Long.parseLong(udev_device_get_sysattr_value(usb_dev, "bcdDevice"));
 
-			if (bus != BUS_USB && bus != BUS_BLUETOOTH)
-				throw new IOException("bus != BUS_USB && bus != BUS_BLUETOOTH ");
+            m_ProductString = (String) p.get("HID_NAME");
+            m_SerialNumberString = (String) p.get("HID_UNIQ");
 
-			switch (bus) {
-				case BUS_USB:
-					/*
+            if (bus != BUS_USB && bus != BUS_BLUETOOTH)
+                throw new IOException("bus != BUS_USB && bus != BUS_BLUETOOTH ");
+
+            switch (bus) {
+                case BUS_USB:
+                    /*
 					 * The device pointed to by raw_dev contains information
 					 * about the hidraw device. In order to get information
 					 * about the USB device, get the parent device with the
