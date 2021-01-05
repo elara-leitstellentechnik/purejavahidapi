@@ -29,31 +29,49 @@
  */
 package purejavahidapi.windows;
 
-import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
+import static com.sun.jna.platform.win32.Cfgmgr32.CR_SUCCESS;
+import static com.sun.jna.platform.win32.Kernel32.ERROR_INSUFFICIENT_BUFFER;
+import static com.sun.jna.platform.win32.Kernel32.ERROR_INVALID_DATA;
+import static com.sun.jna.platform.win32.Kernel32.ERROR_INVALID_USER_BUFFER;
+import static com.sun.jna.platform.win32.Kernel32.ERROR_NO_MORE_ITEMS;
+import static com.sun.jna.platform.win32.Kernel32.FILE_FLAG_OVERLAPPED;
+import static com.sun.jna.platform.win32.Kernel32.FILE_SHARE_READ;
+import static com.sun.jna.platform.win32.Kernel32.FILE_SHARE_WRITE;
+import static com.sun.jna.platform.win32.Kernel32.GENERIC_READ;
+import static com.sun.jna.platform.win32.Kernel32.GENERIC_WRITE;
+import static com.sun.jna.platform.win32.Kernel32.INSTANCE;
+import static com.sun.jna.platform.win32.Kernel32.OPEN_EXISTING;
+import static com.sun.jna.platform.win32.WinBase.INVALID_HANDLE_VALUE;
+import static purejavahidapi.windows.HidLibrary.HidD_GetAttributes;
+import static purejavahidapi.windows.SetupApiLibrary.DIGCF_DEVICEINTERFACE;
+import static purejavahidapi.windows.SetupApiLibrary.DIGCF_PRESENT;
+import static purejavahidapi.windows.SetupApiLibrary.GUID;
+import static purejavahidapi.windows.SetupApiLibrary.SPDRP_CLASS;
+import static purejavahidapi.windows.SetupApiLibrary.SPDRP_DRIVER;
+import static purejavahidapi.windows.SetupApiLibrary.SP_DEVICE_INTERFACE_DETAIL_DATA_A;
+import static purejavahidapi.windows.SetupApiLibrary.SetupDiDestroyDeviceInfoList;
+import static purejavahidapi.windows.SetupApiLibrary.SetupDiEnumDeviceInfo;
+import static purejavahidapi.windows.SetupApiLibrary.SetupDiEnumDeviceInterfaces;
+import static purejavahidapi.windows.SetupApiLibrary.SetupDiGetClassDevs;
+import static purejavahidapi.windows.SetupApiLibrary.SetupDiGetDeviceInstanceId;
+import static purejavahidapi.windows.SetupApiLibrary.SetupDiGetDeviceInterfaceDetail;
+import static purejavahidapi.windows.SetupApiLibrary.SetupDiGetDeviceRegistryProperty;
 
-import com.sun.jna.*;
+import com.sun.jna.Memory;
+import com.sun.jna.Native;
+import com.sun.jna.NativeLong;
 import com.sun.jna.platform.win32.Cfgmgr32;
+import com.sun.jna.platform.win32.WinNT.HANDLE;
 import com.sun.jna.ptr.IntByReference;
 import purejavahidapi.shared.Backend;
-import purejavahidapi.windows.HidLibrary.*;
+import purejavahidapi.windows.HidLibrary.HIDD_ATTRIBUTES;
 import purejavahidapi.windows.SetupApiLibrary.HDEVINFO;
 import purejavahidapi.windows.SetupApiLibrary.SP_DEVICE_INTERFACE_DATA;
 import purejavahidapi.windows.SetupApiLibrary.SP_DEVINFO_DATA;
 
-import com.sun.jna.platform.win32.WinNT.HANDLE;
-
-import static com.sun.jna.platform.win32.Kernel32.INSTANCE;
-import static com.sun.jna.platform.win32.WinBase.INVALID_HANDLE_VALUE;
-import static com.sun.jna.platform.win32.Kernel32.*;
-import static com.sun.jna.platform.win32.Cfgmgr32.*;
-
-import com.sun.jna.Memory;
-import com.sun.jna.Native;
-
-import static purejavahidapi.windows.SetupApiLibrary.*;
-import static purejavahidapi.windows.HidLibrary.*;
+import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 
 public class WindowsBackend extends Backend {
 
@@ -174,26 +192,28 @@ public class WindowsBackend extends Backend {
 						String parentId = mIdChars.getString(0);
 
 						if (parentId.startsWith("USB\\")) {
-							deviceId = parentId;
-							break;
-						}
-					}
+                            deviceId = parentId;
+                            break;
+                        }
+                    }
 
-					String path = new String(device_interface_detail_data.DevicePath);
-					// path += DEVICE_ID_SEPARATOR + deviceId;
-					// FIXME, need to figure out how to smugle device ID to the actual device ... or how
-					// recreate as above when opening the device
-					devHandle = openDeviceHandle(path, true);
-					if (devHandle == INVALID_HANDLE_VALUE)
-						break;
+                    String path = new String(device_interface_detail_data.DevicePath);
+                    // path += DEVICE_ID_SEPARATOR + deviceId;
+                    // FIXME, need to figure out how to smugle device ID to the actual device ... or how
+                    // recreate as above when opening the device
+                    devHandle = openDeviceHandle(path, true);
+                    if (devHandle == INVALID_HANDLE_VALUE) {
+                        deviceIndex++;
+                        continue;
+                    }
 
-					HIDD_ATTRIBUTES attrib = new HIDD_ATTRIBUTES();
-					attrib.Size = new NativeLong(attrib.size());
-					HidD_GetAttributes(devHandle, attrib);
-					list.add(new HidDeviceInfo(path, deviceId, devHandle, attrib));
+                    HIDD_ATTRIBUTES attrib = new HIDD_ATTRIBUTES();
+                    attrib.Size = new NativeLong(attrib.size());
+                    HidD_GetAttributes(devHandle, attrib);
+                    list.add(new HidDeviceInfo(path, deviceId, devHandle, attrib));
 
-					INSTANCE.CloseHandle(devHandle);
-				}
+                    INSTANCE.CloseHandle(devHandle);
+                }
 
 			}
 
